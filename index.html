@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocRAG — Documentation Q&A</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3e;
+      --accent: #6c63ff;
+      --accent-glow: rgba(108, 99, 255, 0.25);
+      --text: #e8eaf0;
+      --muted: #7b7f9e;
+      --success: #4ade80;
+      --error: #f87171;
+      --warning: #fbbf24;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6c63ff, #a78bfa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+
+    .card:focus-within {
+      border-color: var(--accent);
+    }
+
+    .card h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    input[type="text"],
+    input[type="url"] {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+    }
+
+    button {
+      padding: 0.7rem 1.4rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    button:hover {
+      opacity: 0.88;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Status pill */
+    #status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.85rem;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .dot.ready {
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .dot.loading {
+      background: var(--warning);
+      animation: pulse 1s infinite;
+    }
+
+    .dot.error {
+      background: var(--error);
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.4
+      }
+    }
+
+    /* Answer area */
+    #answer-box {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    #answer-text {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+
+    .source-item {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 0.9rem;
+      background: var(--bg);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .source-item .score {
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .sources-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .error-msg {
+      color: var(--error);
+      font-size: 0.88rem;
+      padding: 0.6rem 0.9rem;
+      background: rgba(248, 113, 113, 0.08);
+      border-radius: 8px;
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>⚡ DocRAG</h1>
+    <p>Paste any documentation URL, then ask questions about it.</p>
+  </header>
+
+  <div class="container">
+
+    <!-- Status -->
+    <div id="status-bar">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">Checking index…</span>
+    </div>
+
+    <!-- Ingest -->
+    <div class="card">
+      <h2>1 · Load Documentation</h2>
+      <div class="row">
+        <input type="url" id="url-input" placeholder="https://docs.python.org/3/library/functions.html">
+        <button id="ingest-btn" onclick="ingest()">Load</button>
+      </div>
+      <div id="ingest-msg" style="margin-top:0.75rem"></div>
+    </div>
+
+    <!-- Ask -->
+    <div class="card">
+      <h2>2 · Ask a Question</h2>
+      <div class="row">
+        <input type="text" id="question-input" placeholder="What does zip() do?"
+          onkeydown="if(event.key==='Enter')ask()">
+        <button id="ask-btn" onclick="ask()">Ask</button>
+      </div>
+      <div id="answer-box" style="margin-top:1rem">
+        <div id="answer-text"></div>
+        <div id="sources-section"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const API = '';
+
+    async function refreshStatus() {
+      try {
+        const res = await fetch(`${API}/status`);
+        const json = await res.json();
+        const d = json.data;
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-text');
+        if (d.index_loaded) {
+          dot.className = 'dot ready';
+          txt.textContent = `Index ready · ${d.chunks_indexed} chunks · ${d.source_url}`;
+        } else {
+          dot.className = 'dot';
+          txt.textContent = 'No documentation loaded yet.';
+        }
+      } catch {
+        document.getElementById('status-text').textContent = 'Server unreachable.';
+        document.getElementById('status-dot').className = 'dot error';
+      }
+    }
+
+    async function ingest() {
+      const url = document.getElementById('url-input').value.trim();
+      const msg = document.getElementById('ingest-msg');
+      const btn = document.getElementById('ingest-btn');
+      if (!url) { showMsg(msg, 'Please enter a URL.', 'error'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Loading…';
+      msg.innerHTML = '';
+      document.getElementById('status-dot').className = 'dot loading';
+      document.getElementById('status-text').textContent = 'Scraping and indexing…';
+
+      try {
+        const res = await fetch(`${API}/ingest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const json = await res.json();
+        if (json.success) {
+          showMsg(msg, `✅ Indexed ${json.data.chunks_indexed} chunks successfully.`, 'ok');
+        } else {
+          showMsg(msg, `❌ ${json.error.message}`, 'error');
+        }
+      } catch (e) {
+        showMsg(msg, `❌ Network error: ${e.message}`, 'error');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Load';
+      refreshStatus();
+    }
+
+    async function ask() {
+      const question = document.getElementById('question-input').value.trim();
+      const answerBox = document.getElementById('answer-box');
+      const answerText = document.getElementById('answer-text');
+      const sourcesSection = document.getElementById('sources-section');
+      const btn = document.getElementById('ask-btn');
+      if (!question) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Thinking…';
+      answerBox.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API}/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, top_k: 3 })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          answerText.textContent = json.data.answer;
+          answerText.style.color = 'var(--text)';
+
+          sourcesSection.innerHTML = '';
+          if (json.data.sources && json.data.sources.length > 0) {
+            const label = document.createElement('div');
+            label.className = 'sources-label';
+            label.textContent = 'Retrieved Sources';
+            label.style.marginBottom = '0.5rem';
+            sourcesSection.appendChild(label);
+
+            json.data.sources.forEach((s, i) => {
+              const el = document.createElement('div');
+              el.className = 'source-item';
+              el.innerHTML = `<div class="score">Chunk ${i + 1} · score ${s.score}</div>${s.text.slice(0, 200)}…`;
+              sourcesSection.appendChild(el);
+            });
+          }
+          answerBox.style.display = 'flex';
+        } else {
+          answerText.textContent = json.error.message;
+          answerText.style.color = 'var(--error)';
+          sourcesSection.innerHTML = '';
+          answerBox.style.display = 'flex';
+        }
+      } catch (e) {
+        answerText.textContent = `Network error: ${e.message}`;
+        answerText.style.color = 'var(--error)';
+        answerBox.style.display = 'flex';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Ask';
+    }
+
+    function showMsg(el, text, type) {
+      el.innerHTML = `<div class="${type === 'error' ? 'error-msg' : ''}" style="${type === 'ok' ? 'color:var(--success);font-size:0.88rem' : ''}">${text}</div>`;
+    }
+
+    refreshStatus();
+    setInterval(refreshStatus, 10000);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+# Web framework
+flask>=3.0.0
+
+# HTTP + scraping
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Embeddings
+sentence-transformers>=3.0.0
+
+# Vector store
+faiss-cpu>=1.8.0
+
+# Answer generation (google-genai replaces deprecated google-generativeai)
+google-genai>=1.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Numerical ops (used by sentence-transformers + FAISS normalization)
+numpy>=1.26.0
