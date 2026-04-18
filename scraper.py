@@ -10,6 +10,7 @@ pages (e.g. via Playwright) without touching any other module.
 
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
 
 
 # Tags that are always noise in documentation pages
@@ -101,3 +102,84 @@ def fetch_and_clean(url: str) -> str:
         )
 
     return text
+
+
+def _normalize_url(base: str, ref: str) -> str:
+    """Normalize a relative URL to an absolute URL, removing fragments."""
+    joined = urljoin(base, ref)
+    parsed = urlparse(joined)
+    # Remove #fragments from tracking to avoid duplicating the same page
+    return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+
+
+def fetch_multiple_pages(base_url: str, max_pages: int = 20) -> list[dict]:
+    """
+    Proper BFS crawler for documentation sites.
+    Expands links from every visited page (not just base page).
+    """
+
+    from collections import deque
+
+    print(f"[CRAWL] Starting from base URL: {base_url}")
+
+    base_domain = urlparse(base_url).netloc
+
+    queue = deque([base_url])
+    visited = set()
+    results = []
+
+    while queue and len(results) < max_pages:
+        current_url = queue.popleft()
+
+        if current_url in visited:
+            continue
+
+        visited.add(current_url)
+        print(f"[CRAWL] Visiting: {current_url}")
+
+        try:
+            # --- Fetch & clean content ---
+            text = fetch_and_clean(current_url)
+            results.append({
+                "text": text,
+                "source_url": current_url
+            })
+
+            # --- Fetch page again for link extraction ---
+            response = requests.get(
+                current_url,
+                timeout=10,
+                headers={"User-Agent": "DocRAG/3.0"}
+            )
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+
+                if href.startswith("#") or href.startswith("mailto:"):
+                    continue
+
+                norm = _normalize_url(current_url, href)
+
+                # Stay in same domain
+                if urlparse(norm).netloc != base_domain:
+                    continue
+
+                # Skip unwanted links
+                lower = norm.lower()
+                if any(x in lower for x in ["login", "signup", "auth", "logout"]):
+                    continue
+
+                if norm not in visited:
+                    queue.append(norm)
+
+        except Exception as e:
+            print(f"[CRAWL] Skipped {current_url}: {e}")
+            continue
+
+    print(f"[CRAWL] Total pages crawled: {len(results)}")
+
+    if not results:
+        raise ValueError("No valid pages crawled.")
+
+    return results

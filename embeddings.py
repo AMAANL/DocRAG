@@ -15,7 +15,7 @@ Similarity metric: cosine similarity via FAISS IndexFlatIP
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
-from typing import TypedDict
+from typing import TypedDict, Union
 
 # ---------------------------------------------------------------------------
 # Types
@@ -81,7 +81,7 @@ class EmbeddingStore:
     # Public API
     # ------------------------------------------------------------------
 
-    def build_index(self, chunks: list[str], source_url: str) -> int:
+    def build_index(self, chunks: Union[list[str], list[dict]], source_url: str = "") -> int:
         """
         Embeds a list of text chunks and builds a fresh FAISS index.
 
@@ -89,8 +89,8 @@ class EmbeddingStore:
         (in-memory design: one active document at a time).
 
         Args:
-            chunks:     Non-empty list of text strings to index.
-            source_url: The URL these chunks came from (stored as metadata).
+            chunks:     Non-empty list of text strings or dicts to index.
+            source_url: Default URL if chunks are strings.
 
         Returns:
             Number of chunks successfully indexed.
@@ -102,9 +102,22 @@ class EmbeddingStore:
         if not chunks:
             raise ValueError("Cannot build index from an empty chunk list.")
 
+        if isinstance(chunks[0], dict):
+            text_values = [c["text"] for c in chunks]
+            self._chunks = [
+                ChunkMetadata(text=c["text"].strip(), source=c.get("source_url", source_url))
+                for c in chunks
+            ]
+        else:
+            text_values = chunks
+            self._chunks = [
+                ChunkMetadata(text=c.strip(), source=source_url)
+                for c in chunks
+            ]
+
         # Embed all chunks in one batched call (efficient)
         try:
-            embeddings = self._embed(chunks)
+            embeddings = self._embed(text_values)
         except Exception as e:
             raise RuntimeError(f"Embedding generation failed: {e}")
 
@@ -114,17 +127,9 @@ class EmbeddingStore:
 
         # Persist index and metadata
         self._index = index
-        self._chunks = [
-            ChunkMetadata(
-                text=chunk.strip(),
-                source=source_url
-            )
-            for chunk in chunks
-        ]
-
         return len(self._chunks)
 
-    def search(self, query: str, top_k: int = 3) -> list[SearchResult]:
+    def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
         """
         Finds the top-k chunks most semantically similar to the query.
 

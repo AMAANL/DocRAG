@@ -4,160 +4,308 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DocRAG — Documentation Q&A</title>
+  <title>DocRAG — Documentation Intelligence</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --border: #2a2d3e;
-      --accent: #6c63ff;
-      --accent-glow: rgba(108, 99, 255, 0.25);
-      --text: #e8eaf0;
-      --muted: #7b7f9e;
-      --success: #4ade80;
-      --error: #f87171;
-      --warning: #fbbf24;
+      --bg: #0a0a0c;
+      --bg-glass: rgba(15, 15, 18, 0.6);
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #8b5cf6;
+      --accent-gradient: linear-gradient(135deg, #a78bfa, #8b5cf6, #ec4899);
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
     }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Outfit', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 2rem 1rem;
+      padding: 0 1.5rem;
+      overflow-x: hidden;
+      background-image: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.15), transparent 50%);
     }
 
-    header {
+    /* Floating blobs for background */
+    .blob {
+      position: absolute;
+      filter: blur(80px);
+      z-index: -1;
+      opacity: 0.5;
+      animation: float 10s infinite ease-in-out alternate;
+    }
+    .blob-1 {
+      top: -100px;
+      left: -100px;
+      width: 400px;
+      height: 400px;
+      background: rgba(139, 92, 246, 0.3);
+      animation-delay: 0s;
+    }
+    .blob-2 {
+      bottom: -150px;
+      right: -100px;
+      width: 500px;
+      height: 500px;
+      background: rgba(236, 72, 153, 0.2);
+      animation-delay: -5s;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(30px) scale(1.05); }
+    }
+
+    /* Hero Section */
+    .hero {
       text-align: center;
-      margin-bottom: 2.5rem;
+      margin-top: 5rem;
+      margin-bottom: 3.5rem;
+      animation: fadeUp 0.8s ease-out;
     }
 
-    header h1 {
-      font-size: 2rem;
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.4rem 1rem;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #a78bfa;
+      margin-bottom: 1.5rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #6c63ff, #a78bfa);
+      background: var(--accent-gradient);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
       -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
-    }
-
-    header p {
-      color: var(--muted);
-      margin-top: 0.4rem;
-      font-size: 0.95rem;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 760px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      transition: border-color 0.2s;
-    }
-
-    .card:focus-within {
-      border-color: var(--accent);
-    }
-
-    .card h2 {
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
+      letter-spacing: -1px;
+      line-height: 1.1;
       margin-bottom: 1rem;
     }
 
-    .row {
+    .hero p {
+      color: var(--muted);
+      font-size: 1.15rem;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Main Container */
+    .container {
+      width: 100%;
+      max-width: 800px;
       display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      animation: fadeUp 1s ease-out;
+    }
+
+    /* Glass Panels */
+    .glass-panel {
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .glass-panel:hover {
+      transform: translateY(-2px);
+      border-color: rgba(139, 92, 246, 0.3);
+      box-shadow: 0 25px 50px rgba(139, 92, 246, 0.1);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
       gap: 0.75rem;
-      align-items: flex-start;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-header div {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .panel-header h2 {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    /* Input Fields (Buttonless aesthetic) */
+    .input-wrapper {
+      position: relative;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .input-wrapper:focus-within {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
     }
 
     input[type="text"],
     input[type="url"] {
       flex: 1;
-      padding: 0.7rem 1rem;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: transparent;
+      border: none;
+      padding: 1rem 1.25rem;
       color: var(--text);
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       font-family: inherit;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
     input::placeholder {
-      color: var(--muted);
+      color: #6b7280;
     }
 
-    button {
-      padding: 0.7rem 1.4rem;
-      background: var(--accent);
-      color: #fff;
+    /* Invisible button wrapped as an icon */
+    .icon-btn {
+      background: var(--accent-gradient);
       border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      font-family: inherit;
+      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      white-space: nowrap;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: transform 0.2s, opacity 0.2s;
+      margin-right: 4px;
     }
 
-    button:hover {
-      opacity: 0.88;
+    .icon-btn:hover {
+      transform: scale(1.05);
     }
 
-    button:active {
-      transform: scale(0.97);
+    .icon-btn:active {
+      transform: scale(0.95);
     }
 
-    button:disabled {
-      opacity: 0.45;
+    .icon-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: white;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
       transform: none;
     }
 
-    /* Status pill */
-    #status-bar {
+    /* Multi-page Checkbox styling */
+    .checkbox-container {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
-      padding: 0.75rem 1rem;
-      background: var(--bg);
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      margin-left: 0.5rem;
+      cursor: pointer;
+    }
+
+    .checkbox-container input {
+      display: none;
+    }
+
+    .checkmark {
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .checkbox-container input:checked + .checkmark {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .checkbox-container input:checked + .checkmark::after {
+      content: '✓';
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .checkbox-label {
+      font-size: 0.9rem;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    .checkbox-container:hover .checkbox-label {
+      color: var(--text);
+    }
+
+    /* Status Pill */
+    #status-bar {
+      align-self: center;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1.2rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 30px;
       font-size: 0.85rem;
+      backdrop-filter: blur(10px);
+      margin-top: -1rem;
     }
 
     .dot {
@@ -165,112 +313,118 @@
       height: 8px;
       border-radius: 50%;
       background: var(--muted);
-      flex-shrink: 0;
-      transition: background 0.3s;
+      transition: background 0.3s, box-shadow 0.3s;
     }
 
-    .dot.ready {
-      background: var(--success);
-      box-shadow: 0 0 6px var(--success);
-    }
-
-    .dot.loading {
-      background: var(--warning);
-      animation: pulse 1s infinite;
-    }
-
-    .dot.error {
-      background: var(--error);
-    }
+    .dot.ready { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .dot.loading { background: var(--warning); animation: pulse 1s infinite; }
+    .dot.error { background: var(--error); }
 
     @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1
-      }
-
-      50% {
-        opacity: 0.4
-      }
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
-    /* Answer area */
+    /* Answer Area */
     #answer-box {
       display: none;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.5rem;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     #answer-text {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem 1.2rem;
-      line-height: 1.7;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: #e5e7eb;
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 16px;
+      border-left: 2px solid var(--accent);
+    }
+
+    .sources-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .source-item {
-      border-left: 3px solid var(--accent);
-      padding: 0.6rem 0.9rem;
-      background: var(--bg);
-      border-radius: 0 8px 8px 0;
-      font-size: 0.82rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.85rem;
       color: var(--muted);
-      line-height: 1.5;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s;
+    }
+
+    .source-item:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.04);
     }
 
     .source-item .score {
       font-size: 0.75rem;
-      color: var(--accent);
+      color: #a78bfa;
       font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-
-    .sources-label {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--muted);
+      margin-bottom: 0.4rem;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.5px;
     }
 
     .error-msg {
       color: var(--error);
-      font-size: 0.88rem;
-      padding: 0.6rem 0.9rem;
-      background: rgba(248, 113, 113, 0.08);
-      border-radius: 8px;
-      border: 1px solid rgba(248, 113, 113, 0.2);
+      font-size: 0.9rem;
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .spinner {
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 18px;
+      height: 18px;
       border: 2px solid rgba(255, 255, 255, 0.3);
       border-top-color: #fff;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-right: 6px;
-      vertical-align: middle;
+      animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Hide button text but keep structural integrity */
+    .btn-text {
+      display: none;
     }
   </style>
 </head>
 
 <body>
 
-  <header>
-    <h1>⚡ DocRAG</h1>
-    <p>Paste any documentation URL, then ask questions about it.</p>
-  </header>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <section class="hero">
+    <div class="hero-badge">Next-Gen RAG System</div>
+    <h1>DocRAG Intelligence</h1>
+    <p>Seamlessly ingest massive documentation boundaries and query them instantly. Just link your docs, hit enter, and ask anything.</p>
+  </section>
 
   <div class="container">
 
@@ -281,24 +435,43 @@
     </div>
 
     <!-- Ingest -->
-    <div class="card">
-      <h2>1 · Load Documentation</h2>
-      <div class="row">
-        <input type="url" id="url-input" placeholder="https://docs.python.org/3/library/functions.html">
-        <button id="ingest-btn" onclick="ingest()">Load</button>
+    <div class="glass-panel">
+      <div class="panel-header">
+        <div>1</div>
+        <h2>Connect Documentation</h2>
       </div>
-      <div id="ingest-msg" style="margin-top:0.75rem"></div>
+      
+      <div class="input-wrapper">
+        <input type="url" id="url-input" placeholder="e.g., https://fastapi.tiangolo.com/" onkeydown="if(event.key==='Enter')ingest()">
+        <button id="ingest-btn" class="icon-btn" onclick="ingest()" title="Ingest Documentation">
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      
+      <label class="checkbox-container">
+        <input type="checkbox" id="multi-page-checkbox">
+        <div class="checkmark"></div>
+        <span class="checkbox-label">Deep crawl (automatically map up to 10 sub-pages)</span>
+      </label>
+      
+      <div id="ingest-msg"></div>
     </div>
 
     <!-- Ask -->
-    <div class="card">
-      <h2>2 · Ask a Question</h2>
-      <div class="row">
-        <input type="text" id="question-input" placeholder="What does zip() do?"
-          onkeydown="if(event.key==='Enter')ask()">
-        <button id="ask-btn" onclick="ask()">Ask</button>
+    <div class="glass-panel">
+      <div class="panel-header">
+        <div>2</div>
+        <h2>Query Knowledge Base</h2>
       </div>
-      <div id="answer-box" style="margin-top:1rem">
+      
+      <div class="input-wrapper">
+        <input type="text" id="question-input" placeholder="Ask a question about the loaded docs..." onkeydown="if(event.key==='Enter')ask()">
+        <button id="ask-btn" class="icon-btn" onclick="ask()" title="Ask Question">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </button>
+      </div>
+      
+      <div id="answer-box">
         <div id="answer-text"></div>
         <div id="sources-section"></div>
       </div>
@@ -333,19 +506,25 @@
       const url = document.getElementById('url-input').value.trim();
       const msg = document.getElementById('ingest-msg');
       const btn = document.getElementById('ingest-btn');
+      const isMulti = document.getElementById('multi-page-checkbox').checked;
+      
       if (!url) { showMsg(msg, 'Please enter a URL.', 'error'); return; }
 
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Loading…';
+      btn.innerHTML = '<span class="spinner"></span>';
       msg.innerHTML = '';
       document.getElementById('status-dot').className = 'dot loading';
-      document.getElementById('status-text').textContent = 'Scraping and indexing…';
+      document.getElementById('status-text').textContent = isMulti ? 'Crawling and indexing…' : 'Scraping and indexing…';
 
       try {
         const res = await fetch(`${API}/ingest`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ 
+            url,
+            multi_page: isMulti,
+            max_pages: 10
+          })
         });
         const json = await res.json();
         if (json.success) {
@@ -358,7 +537,7 @@
       }
 
       btn.disabled = false;
-      btn.textContent = 'Load';
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
       refreshStatus();
     }
 
@@ -371,14 +550,14 @@
       if (!question) return;
 
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Thinking…';
+      btn.innerHTML = '<span class="spinner"></span>';
       answerBox.style.display = 'none';
 
       try {
         const res = await fetch(`${API}/ask`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question, top_k: 3 })
+          body: JSON.stringify({ question, top_k: 5 })
         });
         const json = await res.json();
 
@@ -390,14 +569,13 @@
           if (json.data.sources && json.data.sources.length > 0) {
             const label = document.createElement('div');
             label.className = 'sources-label';
-            label.textContent = 'Retrieved Sources';
-            label.style.marginBottom = '0.5rem';
+            label.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Retrieved Sources';
             sourcesSection.appendChild(label);
 
             json.data.sources.forEach((s, i) => {
               const el = document.createElement('div');
               el.className = 'source-item';
-              el.innerHTML = `<div class="score">Chunk ${i + 1} · score ${s.score}</div>${s.text.slice(0, 200)}…`;
+              el.innerHTML = `<div class="score">Chunk ${i + 1} · relevance ${s.score.toFixed(3)}</div>${s.text.slice(0, 250)}…`;
               sourcesSection.appendChild(el);
             });
           }
@@ -415,7 +593,7 @@
       }
 
       btn.disabled = false;
-      btn.textContent = 'Ask';
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>';
     }
 
     function showMsg(el, text, type) {

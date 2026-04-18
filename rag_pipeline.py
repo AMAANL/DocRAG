@@ -37,54 +37,53 @@ _GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
 # ---------------------------------------------------------------------------
 
 
+from typing import Union
+
 def chunk_text(
-    text: str,
+    text_data: Union[str, list[dict]],
     max_len: int = _MAX_CHUNK_LEN,
     min_len: int = _MIN_CHUNK_LEN,
-) -> list[str]:
+    default_url: str = ""
+) -> list[dict]:
     """
-    Splits raw documentation text into clean, indexable chunks.
-
-    Strategy (in order):
-      1. Split on paragraph boundaries (double newlines).
-      2. Discard chunks shorter than min_len (noise, headings, lone symbols).
-      3. Keep paragraphs that fit within max_len as-is.
-      4. For oversized paragraphs: split on sentence boundaries, accumulating
-         sentences into windows ≤ max_len.
-      5. If a single sentence is itself too long: hard-cut via textwrap.wrap().
-
-    Args:
-        text:    Raw plain text from scraper.fetch_and_clean().
-        max_len: Maximum chunk length in characters (default 1000).
-        min_len: Minimum chunk length in characters (default 50).
-
-    Returns:
-        Ordered list of non-empty text chunks, ready for embedding.
-
-    Raises:
-        ValueError: if text is empty or blank.
+    Splits raw documentation text or pages into clean, indexable chunks.
+    Preserves source URL metadata per chunk.
     """
-    if not text or not text.strip():
-        raise ValueError("chunk_text received empty or blank text.")
+    if isinstance(text_data, str):
+        if not text_data.strip():
+            raise ValueError("chunk_text received empty or blank text.")
+        pages = [{"text": text_data, "source_url": default_url}]
+    else:
+        pages = text_data
+        
+    final_chunks: list[dict] = []
 
-    raw_paragraphs = text.split("\n\n")
-    chunks: list[str] = []
-
-    for para in raw_paragraphs:
-        para = para.strip()
-
-        # Skip noise: empty lines, lone headings, short fragments
-        if len(para) < min_len:
+    for page in pages:
+        text = page["text"]
+        source_url = page["source_url"]
+        
+        if not text or not text.strip():
             continue
 
-        if len(para) <= max_len:
-            chunks.append(para)
-        else:
-            # Paragraph too long — split on sentence boundaries
-            sub_chunks = _split_on_sentences(para, max_len, min_len)
-            chunks.extend(sub_chunks)
+        raw_paragraphs = re.split(r"\n{2,}", text)
 
-    return chunks
+        for para in raw_paragraphs:
+            para = para.strip()
+
+            if len(para) < min_len:
+                continue
+
+            if len(para) <= max_len:
+                final_chunks.append({"text": para, "source_url": source_url})
+            else:
+                sub_chunks = _split_on_sentences(para, max_len, min_len)
+                for sc in sub_chunks:
+                    final_chunks.append({"text": sc, "source_url": source_url})
+
+    if not final_chunks:
+        raise ValueError("Chunking resulted in 0 valid chunks.")
+
+    return final_chunks
 
 
 def _split_on_sentences(text: str, max_len: int, min_len: int) -> list[str]:

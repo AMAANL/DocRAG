@@ -13,7 +13,7 @@ Endpoints:
 from flask import Flask, request, jsonify, Response, send_from_directory
 
 from embeddings import EmbeddingStore
-from scraper import fetch_and_clean
+from scraper import fetch_and_clean, fetch_multiple_pages
 from rag_pipeline import chunk_text, generate_answer
 from dotenv import load_dotenv
 load_dotenv()
@@ -76,6 +76,8 @@ def ingest() -> Response:
     """
     body = request.get_json(silent=True) or {}
     url: str = (body.get("url") or "").strip()
+    multi_page: bool = body.get("multi_page", False)
+    max_pages: int = body.get("max_pages", 30)
 
     if not url:
         return _err(
@@ -86,7 +88,10 @@ def ingest() -> Response:
 
     # --- Scrape ---
     try:
-        raw_text = fetch_and_clean(url)
+        if multi_page:
+            raw_text = fetch_multiple_pages(url, max_pages=max_pages)
+        else:
+            raw_text = fetch_and_clean(url)
     except ValueError as e:
         return _err("INGEST_FAILED", str(e), status=422)
     except Exception as e:
@@ -170,7 +175,7 @@ def ask() -> Response:
         )
 
     # Validate optional top_k
-    raw_top_k = body.get("top_k", 3)
+    raw_top_k = body.get("top_k", 10)
     try:
         top_k = int(raw_top_k)
         if not (1 <= top_k <= 10):
